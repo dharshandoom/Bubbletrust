@@ -1,0 +1,42 @@
+name: Build ZYVO APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Extract ZYVO source
+        run: |
+          unzip -q zyvo_mvp_flutter.zip -d source
+          flutter create --platforms=android --project-name zyvo zyvo
+          cp -r source/zyvo_mvp/lib zyvo/
+          cp -r source/zyvo_mvp/assets zyvo/
+          cp source/zyvo_mvp/pubspec.yaml zyvo/pubspec.yaml
+
+      - name: Get dependencies
+        working-directory: zyvo
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: zyvo
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: zyvo-release-apk
+          path: zyvo/build/app/outputs/flutter-apk/app-release.apk
